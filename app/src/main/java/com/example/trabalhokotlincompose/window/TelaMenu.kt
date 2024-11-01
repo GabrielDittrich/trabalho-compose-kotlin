@@ -135,7 +135,6 @@ fun InputNovoFilme() {
             corroutineScope.launch {
                 val novoFilme = Filme(0,nome,ano)
                 db.filmeDao().addFilme(novoFilme)
-
             }
         }
         ){

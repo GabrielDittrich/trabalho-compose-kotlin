@@ -1,5 +1,6 @@
 package com.example.trabalhokotlincompose.data
 
+import androidx.lifecycle.LiveData
 import androidx.room.Dao
 import androidx.room.Delete
 import androidx.room.Insert
@@ -20,10 +21,13 @@ interface FilmeDao {
     suspend fun deletarFilme(filme: Filme)
 
     @Query("SELECT * FROM filme_table")
-    suspend fun listarLivros() : List<Filme>
+    fun listarFilmes() : LiveData<Filme>
 
     @Query("SELECT * FROM filme_table ORDER BY ano ASC")
-    suspend fun listarLivrosEmOrdem() : List<Filme>
+    suspend fun listarFilmesEmOrdem() : List<Filme>
+
+    @Query("SELECT * FROM filme_table WHERE id = :id")
+    suspend fun getFilmeById(id: Int): LiveData<Filme>
 
 }
 
