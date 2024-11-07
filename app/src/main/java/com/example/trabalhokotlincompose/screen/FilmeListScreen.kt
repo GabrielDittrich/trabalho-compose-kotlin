@@ -1,32 +1,19 @@
 package com.example.trabalhokotlincompose.screen
 
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Build
 import androidx.compose.material.icons.filled.Close
-import androidx.compose.material3.Button
-import androidx.compose.material3.Checkbox
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
-import androidx.compose.material3.TextField
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.setValue
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
+import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
@@ -35,16 +22,18 @@ import androidx.navigation.NavHostController
 import com.example.trabalhokotlincompose.data.Filme
 import com.example.trabalhokotlincompose.data.FilmeDataBase
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 
 @Composable
 fun FilmeListScreen(navController: NavHostController) {
-
-    val corroutineScope = rememberCoroutineScope()
+    val coroutineScope = rememberCoroutineScope()
     val context = LocalContext.current
     val db = FilmeDataBase.getDatabase(context)
 
-    val filmeLiveData: LiveData<Filme> = db.filmeDao().listarFilmes()
+    // Usando LiveData com observeAsState para obter os filmes
+    val filmeLiveData: LiveData<List<Filme>> = db.filmeDao().listarFilmes()
+    val filmes by filmeLiveData.observeAsState(initial = emptyList())  // Inicializa com uma lista vazia
 
     Column(
         modifier = Modifier
@@ -54,31 +43,38 @@ fun FilmeListScreen(navController: NavHostController) {
         Text("Meus Filmes", style = MaterialTheme.typography.bodyMedium)
         Spacer(modifier = Modifier.height(16.dp))
 
+        // Componente de input para adicionar filmes
         FilmeInputField { filmeNome ->
-            corroutineScope.launch {
-                db.filmeDao().addFilme(Filme(0, filmeNome))
+            coroutineScope.launch(Dispatchers.IO) {
+                db.filmeDao().addFilme(Filme(nome = filmeNome, ano = "2024", assistido = false))
             }
         }
 
         Spacer(modifier = Modifier.height(16.dp))
-        FilmeList(filme, corroutineScope, db, navController)
+
+        // Passando os filmes para a lista
+        FilmeList(filmes = filmes, coroutineScope = coroutineScope, db = db, navController = navController)
     }
 }
 
-
 @Composable
-fun FilmeList(filmes: List<Filme>, corroutineScope: CoroutineScope, db: FilmeDataBase, navController: NavHostController) {
+fun FilmeList(
+    filmes: List<Filme>,
+    coroutineScope: CoroutineScope,
+    db: FilmeDataBase,
+    navController: NavHostController
+) {
     LazyColumn {
         items(filmes) { filme ->
             FilmeItem(
                 filme = filme,
                 onCheckedChange = { isChecked ->
-                    corroutineScope.launch {
-                        db.filmeDao().atualizarFilme(filme.copy(isCompleted = isChecked))
+                    coroutineScope.launch(Dispatchers.IO) {
+                        db.filmeDao().atualizarFilme(filme.copy(assistido = isChecked))
                     }
                 },
                 onDelete = {
-                    corroutineScope.launch {
+                    coroutineScope.launch(Dispatchers.IO) {
                         db.filmeDao().deletarFilme(filme)
                     }
                 },
@@ -90,39 +86,48 @@ fun FilmeList(filmes: List<Filme>, corroutineScope: CoroutineScope, db: FilmeDat
     }
 }
 
+
 @Composable
-fun FilmeItem(filme: Filme, onCheckedChange: (Boolean) -> Unit, onDelete: () -> Unit,  onEditClick: () -> Unit) {
+fun FilmeItem(
+    filme: Filme,
+    onCheckedChange: (Boolean) -> Unit,
+    onDelete: () -> Unit,
+    onEditClick: () -> Unit
+) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(8.dp),
+            .padding(12.dp)
+            .background(MaterialTheme.colorScheme.surface)
+            .clip(RoundedCornerShape(8.dp))
+            .padding(16.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         Checkbox(
             checked = filme.assistido,
-            onCheckedChange = { onCheckedChange(it) }
+            onCheckedChange = { onCheckedChange(it) },
+            modifier = Modifier.padding(end = 16.dp)
         )
-        Spacer(modifier = Modifier.width(8.dp))
         Text(
             text = filme.nome,
-            style = MaterialTheme.typography.bodySmall,
+            style = MaterialTheme.typography.bodyLarge,
+            modifier = Modifier.weight(1f),
             textDecoration = if (filme.assistido) TextDecoration.LineThrough else null
         )
-        Spacer(modifier = Modifier.weight(1f))
         IconButton(onClick = onEditClick) {
-            Icon(imageVector = Icons.Default.Build, contentDescription = "Edit Filme")
+            Icon(imageVector = Icons.Default.Build, contentDescription = "Editar Filme")
         }
 
         IconButton(onClick = onDelete) {
-            Icon(imageVector = Icons.Default.Close, contentDescription = "Delete Filme")
+            Icon(imageVector = Icons.Default.Close, contentDescription = "Deletar Filme")
         }
-
     }
 }
 
 @Composable
 fun FilmeInputField(onAddTask: (String) -> Unit) {
     var newFilme by remember { mutableStateOf("") }
+
     Column {
         TextField(
             value = newFilme,

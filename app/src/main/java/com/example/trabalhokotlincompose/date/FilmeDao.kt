@@ -12,22 +12,22 @@ import androidx.room.Update
 interface FilmeDao {
 
     @Insert(onConflict = OnConflictStrategy.IGNORE)
-    suspend fun addFilme(filme: Filme)
+    fun addFilme(filme: Filme)
 
     @Update
-    suspend fun atualizarFilme(filme: Filme)
+    fun atualizarFilme(filme: Filme)
 
     @Delete
-    suspend fun deletarFilme(filme: Filme)
+    fun deletarFilme(filme: Filme)
 
     @Query("SELECT * FROM filme_table")
-    fun listarFilmes() : LiveData<Filme>
+    fun listarFilmes(): LiveData<List<Filme>>
 
     @Query("SELECT * FROM filme_table ORDER BY ano ASC")
-    suspend fun listarFilmesEmOrdem() : List<Filme>
+    fun listarFilmesEmOrdem() : List<Filme>
 
     @Query("SELECT * FROM filme_table WHERE id = :id")
-    suspend fun getFilmeById(id: Int): LiveData<Filme>
+    fun getFilmeById(id: Int): LiveData<Filme>
 
 }
 
