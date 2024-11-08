@@ -31,9 +31,9 @@ fun FilmeListScreen(navController: NavHostController) {
     val context = LocalContext.current
     val db = FilmeDataBase.getDatabase(context)
 
-    // Usando LiveData com observeAsState para obter os filmes
-    val filmeLiveData: LiveData<List<Filme>> = db.filmeDao().listarFilmes()
-    val filmes by filmeLiveData.observeAsState(initial = emptyList())  // Inicializa com uma lista vazia
+    // Usando Flow e collectAsState para obter os filmes
+    val filmesFlow = db.filmeDao().listarFilmes()
+    val filmes by filmesFlow.collectAsState(initial = emptyList())  // Agora usamos collectAsState com Flow
 
     Column(
         modifier = Modifier
@@ -56,6 +56,7 @@ fun FilmeListScreen(navController: NavHostController) {
         FilmeList(filmes = filmes, coroutineScope = coroutineScope, db = db, navController = navController)
     }
 }
+
 
 @Composable
 fun FilmeList(
